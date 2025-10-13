@@ -26,6 +26,10 @@ public class CourseLessonService {
         return lessonRepository.findByCourseId(courseId);
     }
 
+    public List<CourseLesson> getLessonsByCourse(Long courseId) {
+        return lessonRepository.findByCourseId(courseId);
+    }
+
     public CourseLesson createLesson(Long courseId, Long moduleId, CourseLesson lesson) {
         Course course = courseRepository.findById(courseId).orElseThrow();
         lesson.setCourse(course);
