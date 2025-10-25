@@ -31,11 +31,11 @@ export OCMS_DB_PASS="your_password"
 
 ### Running the Application
 ```bash
-cd SMS-APP-JAVA-BACKEND/ocms-backend
+cd ocms-backend
 mvn spring-boot:run
 ```
 
-The service will start on port 8081.
+The service will start on port 8091.
 
 ## API Endpoints
 
@@ -85,7 +85,7 @@ The service will start on port 8081.
 
 ## Database Schema
 
-The application uses Flyway for database migrations. All tables are created automatically on startup:
+The application uses Hibernate auto-DDL (Flyway disabled). All tables are created automatically on startup:
 
 - `courses` - Course information with start/end dates and status
 - `modules` - Course modules
@@ -94,13 +94,16 @@ The application uses Flyway for database migrations. All tables are created auto
 - `assessment_questions` - Assessment questions
 - `question_options` - Question answer options
 - `course_materials` - Course materials and file attachments
+- `enrollments` - User course enrollments
+- `participant_progress` - Lesson completion tracking
 
 ## Security
 
-- CORS enabled for `http://localhost:3000`
+- CORS enabled for `http://localhost:3000`, `http://localhost:3001`, and other local origins
 - All GET endpoints are public
-- POST/PUT/DELETE endpoints require authentication (to be implemented)
-- JWT token support ready for integration
+- POST/PUT/DELETE endpoints are temporarily open for development
+- JWT token support ready for production integration
+- Authentication endpoints available at `/auth/**`
 
 ## Status Codes
 

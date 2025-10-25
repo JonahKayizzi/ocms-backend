@@ -1,0 +1,22 @@
+[
+  {
+    "optionText": "Following safety procedures and reporting hazards",
+    "question": {"id": 5},
+    "isCorrect": true
+  },
+  {
+    "optionText": "Only following instructions from supervisors", 
+    "question": {"id": 5},
+    "isCorrect": false
+  },
+  {
+    "optionText": "Working faster to meet deadlines",
+    "question": {"id": 5},
+    "isCorrect": false
+  },
+  {
+    "optionText": "Avoiding safety meetings",
+    "question": {"id": 5},
+    "isCorrect": false
+  }
+]

@@ -1,0 +1,18 @@
+[
+  {
+    "optionText": "Everyone shares responsibility for safety outcomes",
+    "question": {"id": 6}
+  },
+  {
+    "optionText": "Only managers are responsible for safety",
+    "question": {"id": 6}
+  },
+  {
+    "optionText": "Safety is the regulator's job",
+    "question": {"id": 6}
+  },
+  {
+    "optionText": "Individual performance doesn't matter",
+    "question": {"id": 6}
+  }
+]

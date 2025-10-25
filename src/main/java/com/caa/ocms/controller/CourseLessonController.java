@@ -17,7 +17,7 @@ public class CourseLessonController {
 
     @GetMapping("/course-lessons/course/{courseId}")
     public List<CourseLesson> byCourse(@PathVariable Long courseId) {
-        return lessonService.listByCourse(courseId);
+        return lessonService.getLessonsByCourse(courseId);
     }
 
     @PostMapping("/add-lesson/{courseId}")

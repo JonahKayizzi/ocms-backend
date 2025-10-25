@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collections;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +20,25 @@ public class AssessmentQuestionService {
 
     public List<AssessmentQuestion> getQuestionsByAssessment(Long assessmentId) {
         return questionRepository.findByAssessment(assessmentId);
+    }
+
+    public List<AssessmentQuestion> getRandomQuestionsByAssessment(Long assessmentId, Integer questionsToPresent) {
+        List<AssessmentQuestion> allQuestions = questionRepository.findByAssessment(assessmentId);
+        
+        if (allQuestions.isEmpty()) {
+            return allQuestions;
+        }
+        
+        // If questionsToPresent is null or greater than available questions, return all questions
+        if (questionsToPresent == null || questionsToPresent >= allQuestions.size()) {
+            return allQuestions;
+        }
+        
+        // Shuffle the questions randomly
+        Collections.shuffle(allQuestions, new Random());
+        
+        // Return only the requested number of questions
+        return allQuestions.subList(0, questionsToPresent);
     }
 
     public ResponseEntity<?> createQuestion(AssessmentQuestion question) {
@@ -43,7 +64,6 @@ public class AssessmentQuestionService {
 
         AssessmentQuestion question = existing.get();
         if (updates.getText() != null) question.setText(updates.getText());
-        if (updates.getCorrectAnswer() != null) question.setCorrectAnswer(updates.getCorrectAnswer());
         if (updates.getOptionsToPresent() != null) question.setOptionsToPresent(updates.getOptionsToPresent());
         if (updates.getImageDataUrl() != null) question.setImageDataUrl(updates.getImageDataUrl());
 

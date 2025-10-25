@@ -27,6 +27,11 @@ public class CourseAssessmentController {
         return ResponseEntity.ok(assessments);
     }
 
+    @GetMapping("/{assessmentId}")
+    public ResponseEntity<CourseAssessment> getAssessmentById(@PathVariable Long assessmentId) {
+        return assessmentService.getAssessmentById(assessmentId);
+    }
+
     @PostMapping
     public ResponseEntity<?> createAssessment(@RequestBody CourseAssessment assessment) {
         return assessmentService.createAssessment(assessment);

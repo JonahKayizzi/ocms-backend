@@ -28,6 +28,7 @@ public class SecurityConfig {
             .requestMatchers("/modules/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/modules/**", "/course-lessons/**", "/assessments/**", 
                            "/assessment-questions/**", "/question-options/**", "/course-materials/**").permitAll()
+            .requestMatchers("/enrollments/**", "/participant-progress/**").permitAll()
             // Temporarily open write endpoints until JWT is wired
             .requestMatchers(HttpMethod.POST, "/courses", "/add-course").permitAll()
             .requestMatchers(HttpMethod.PUT, "/courses/**").permitAll()

@@ -1,0 +1,10 @@
+{
+  "name": "Aviation Safety Responsibilities",
+  "description": "Aviation Safety Responsibilities",
+  "questionsToPresent": 10,
+  "questionCount": 19,
+  "showAnswers": true,
+  "maxRetries": 3,
+  "timingMode": "none",
+  "timeLimit": 30
+}
