@@ -27,11 +27,25 @@ public class QuestionOptionController {
     }
 
     @PostMapping("/bulk")
-    public ResponseEntity<?> createBulkOptions(@RequestBody List<QuestionOption> options) {
-        for (QuestionOption option : options) {
-            optionService.createOption(option);
-        }
-        return ResponseEntity.ok("Bulk options created successfully");
+    public ResponseEntity<List<QuestionOption>> createBulkOptions(@RequestBody List<QuestionOption> options) {
+        System.out.println("Creating bulk options, count: " + options.size());
+        
+        List<QuestionOption> createdOptions = options.stream()
+            .map(option -> {
+                System.out.println("Creating option: " + option.getOptionText() + " for question: " + option.getQuestion().getId());
+                ResponseEntity<?> response = optionService.createOption(option);
+                System.out.println("Response status: " + response.getStatusCode() + ", body: " + response.getBody());
+                
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() instanceof QuestionOption) {
+                    return (QuestionOption) response.getBody();
+                }
+                return null;
+            })
+            .filter(option -> option != null)
+            .toList();
+            
+        System.out.println("Successfully created " + createdOptions.size() + " options");
+        return ResponseEntity.ok(createdOptions);
     }
 
     @PutMapping("/{optionId}")
@@ -42,6 +56,11 @@ public class QuestionOptionController {
     @DeleteMapping("/{optionId}")
     public ResponseEntity<String> deleteOption(@PathVariable Long optionId) {
         return optionService.deleteOption(optionId);
+    }
+
+    @GetMapping("/test-question/{questionId}")
+    public ResponseEntity<?> testQuestion(@PathVariable Long questionId) {
+        return optionService.testQuestion(questionId);
     }
 }
 

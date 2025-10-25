@@ -24,6 +24,14 @@ public class CourseAssessmentService {
         return assessmentRepository.findStandaloneActive();
     }
 
+    public ResponseEntity<CourseAssessment> getAssessmentById(Long assessmentId) {
+        Optional<CourseAssessment> assessment = assessmentRepository.findById(assessmentId);
+        if (assessment.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(assessment.get());
+    }
+
     public ResponseEntity<?> createAssessment(CourseAssessment assessment) {
         if (assessment.getCourse() != null && assessment.getCourse().getId() != null) {
             Optional<com.caa.ocms.model.Course> course = courseRepository.findById(assessment.getCourse().getId());
@@ -51,6 +59,10 @@ public class CourseAssessmentService {
         if (updates.getQuestionsToPresent() != null) assessment.setQuestionsToPresent(updates.getQuestionsToPresent());
         if (updates.getQuestionCount() != null) assessment.setQuestionCount(updates.getQuestionCount());
         if (updates.getStatus() != null) assessment.setStatus(updates.getStatus());
+        if (updates.getShowAnswers() != null) assessment.setShowAnswers(updates.getShowAnswers());
+        if (updates.getMaxRetries() != null) assessment.setMaxRetries(updates.getMaxRetries());
+        if (updates.getTimingMode() != null) assessment.setTimingMode(updates.getTimingMode());
+        if (updates.getTimeLimit() != null) assessment.setTimeLimit(updates.getTimeLimit());
 
         CourseAssessment saved = assessmentRepository.save(assessment);
         return ResponseEntity.ok(saved);

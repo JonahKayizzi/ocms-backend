@@ -31,6 +31,18 @@ public class CourseAssessment {
     @JoinColumn(name = "course_id")
     private Course course; // null for standalone assessments
 
+    @Column(name = "show_answers")
+    private Boolean showAnswers = true;
+
+    @Column(name = "max_retries")
+    private Integer maxRetries = 3;
+
+    @Column(name = "timing_mode")
+    private String timingMode = "none";
+
+    @Column(name = "time_limit")
+    private Integer timeLimit = 30;
+
     @Column
     private Integer status = 1;
 }

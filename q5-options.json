@@ -1,0 +1,18 @@
+[
+  {
+    "optionText": "Following procedures and reporting hazards",
+    "question": {"id": 5}
+  },
+  {
+    "optionText": "Only following procedures",
+    "question": {"id": 5}
+  },
+  {
+    "optionText": "Only reporting hazards",
+    "question": {"id": 5}
+  },
+  {
+    "optionText": "None of the above",
+    "question": {"id": 5}
+  }
+]

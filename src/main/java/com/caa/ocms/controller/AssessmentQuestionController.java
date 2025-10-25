@@ -17,8 +17,33 @@ public class AssessmentQuestionController {
 
     @GetMapping("/assessment/{assessmentId}")
     public ResponseEntity<List<AssessmentQuestion>> getQuestionsByAssessment(@PathVariable Long assessmentId) {
-        List<AssessmentQuestion> questions = questionService.getQuestionsByAssessment(assessmentId);
-        return ResponseEntity.ok(questions);
+        try {
+            System.out.println("Fetching questions for assessment ID: " + assessmentId);
+            List<AssessmentQuestion> questions = questionService.getQuestionsByAssessment(assessmentId);
+            System.out.println("Found " + questions.size() + " questions");
+            return ResponseEntity.ok(questions);
+        } catch (Exception e) {
+            System.err.println("Error fetching questions: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @GetMapping("/assessment/{assessmentId}/random")
+    public ResponseEntity<List<AssessmentQuestion>> getRandomQuestionsByAssessment(
+            @PathVariable Long assessmentId,
+            @RequestParam(required = false) Integer questionsToPresent) {
+        try {
+            System.out.println("Fetching random questions for assessment ID: " + assessmentId + 
+                             ", questionsToPresent: " + questionsToPresent);
+            List<AssessmentQuestion> questions = questionService.getRandomQuestionsByAssessment(assessmentId, questionsToPresent);
+            System.out.println("Found " + questions.size() + " random questions");
+            return ResponseEntity.ok(questions);
+        } catch (Exception e) {
+            System.err.println("Error fetching random questions: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
     }
 
     @PostMapping
