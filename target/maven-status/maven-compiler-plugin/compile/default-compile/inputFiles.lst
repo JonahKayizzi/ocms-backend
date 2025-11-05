@@ -9,6 +9,7 @@ D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\controller\Enrollme
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\controller\ModuleController.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\controller\ParticipantProgressController.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\controller\QuestionOptionController.java
+D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\controller\QuizAttemptController.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\AssessmentQuestion.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\Course.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\CourseAssessment.java
@@ -18,6 +19,8 @@ D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\Enrollment.ja
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\Module.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\ParticipantProgress.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\QuestionOption.java
+D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\QuizAttempt.java
+D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\model\UserQuestionPerformance.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\OcmsApplication.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\repository\AssessmentQuestionRepository.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\repository\CourseAssessmentRepository.java
@@ -28,6 +31,8 @@ D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\repository\Enrollme
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\repository\ModuleRepository.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\repository\ParticipantProgressRepository.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\repository\QuestionOptionRepository.java
+D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\repository\QuizAttemptRepository.java
+D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\repository\UserQuestionPerformanceRepository.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\service\AssessmentQuestionService.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\service\CourseAssessmentService.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\service\CourseLessonService.java
@@ -37,3 +42,4 @@ D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\service\EnrollmentS
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\service\ModuleService.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\service\ParticipantProgressService.java
 D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\service\QuestionOptionService.java
+D:\CAA\SMS Migration\ocms-backend\src\main\java\com\caa\ocms\service\QuizAttemptService.java
