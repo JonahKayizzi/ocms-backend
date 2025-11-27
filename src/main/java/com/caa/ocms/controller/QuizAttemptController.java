@@ -77,6 +77,45 @@ public class QuizAttemptController {
         }).toList();
         return ResponseEntity.ok(dto);
     }
+    
+    @GetMapping("/assessment/{assessmentId}")
+    public ResponseEntity<Map<String, Object>> getAssessmentAnalytics(@PathVariable Long assessmentId) {
+        try {
+            Map<String, Object> analytics = quizAttemptService.getAssessmentAnalytics(assessmentId);
+            return ResponseEntity.ok(analytics);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to fetch assessment analytics");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @GetMapping("/{attemptId}/details")
+    public ResponseEntity<Map<String, Object>> getAttemptDetails(@PathVariable Long attemptId) {
+        try {
+            Map<String, Object> details = quizAttemptService.getAttemptDetails(attemptId);
+            return ResponseEntity.ok(details);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to fetch attempt details");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    @GetMapping("/{attemptId}")
+    public ResponseEntity<Map<String, Object>> getAttemptById(@PathVariable Long attemptId) {
+        try {
+            Map<String, Object> attempt = quizAttemptService.getAttemptDetails(attemptId);
+            return ResponseEntity.ok(attempt);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Attempt not found");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(404).body(error);
+        }
+    }
 }
 
 
