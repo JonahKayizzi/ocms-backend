@@ -21,10 +21,13 @@ public class QuizAttempt {
     private int attemptNumber;
 
     @Column(name = "score", nullable = false)
-    private int score = 0;
+    private Double score = 0.0;
 
     @Column(name = "total_questions", nullable = false)
     private int totalQuestions = 0;
+
+    @Column(name = "total_marks")
+    private Double totalMarks; // Total marks possible for this attempt
 
     @Column(name = "passed", nullable = false)
     private boolean passed = false;
@@ -42,10 +45,12 @@ public class QuizAttempt {
     public void setParticipantId(String participantId) { this.participantId = participantId; }
     public int getAttemptNumber() { return attemptNumber; }
     public void setAttemptNumber(int attemptNumber) { this.attemptNumber = attemptNumber; }
-    public int getScore() { return score; }
-    public void setScore(int score) { this.score = score; }
+    public Double getScore() { return score; }
+    public void setScore(Double score) { this.score = score; }
     public int getTotalQuestions() { return totalQuestions; }
     public void setTotalQuestions(int totalQuestions) { this.totalQuestions = totalQuestions; }
+    public Double getTotalMarks() { return totalMarks; }
+    public void setTotalMarks(Double totalMarks) { this.totalMarks = totalMarks; }
     public boolean isPassed() { return passed; }
     public void setPassed(boolean passed) { this.passed = passed; }
     public Instant getStartedAt() { return startedAt; }

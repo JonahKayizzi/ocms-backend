@@ -26,6 +26,12 @@ public class UserQuestionPerformance {
     @Column(name = "correct", nullable = false)
     private boolean correct;
 
+    @Column(name = "answer_text", columnDefinition = "TEXT")
+    private String answerText; // For structured questions
+
+    @Column(name = "mark_awarded")
+    private Double markAwarded; // Mark awarded by admin for structured questions
+
     public Long getId() { return id; }
     public QuizAttempt getAttempt() { return attempt; }
     public void setAttempt(QuizAttempt attempt) { this.attempt = attempt; }
@@ -37,6 +43,10 @@ public class UserQuestionPerformance {
     public void setAnswerId(Long answerId) { this.answerId = answerId; }
     public boolean isCorrect() { return correct; }
     public void setCorrect(boolean correct) { this.correct = correct; }
+    public String getAnswerText() { return answerText; }
+    public void setAnswerText(String answerText) { this.answerText = answerText; }
+    public Double getMarkAwarded() { return markAwarded; }
+    public void setMarkAwarded(Double markAwarded) { this.markAwarded = markAwarded; }
 }
 
 

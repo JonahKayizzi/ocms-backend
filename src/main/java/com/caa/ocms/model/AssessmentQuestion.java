@@ -37,6 +37,17 @@ public class AssessmentQuestion {
 
     @OneToMany(mappedBy = "question", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<QuestionOption> options;
+
+    @Column(name = "type")
+    @JsonProperty("questionType")
+    private String type; // "multiple_choice" or "structured"
+
+    @Column(name = "mandatory")
+    @JsonProperty("isMandatory")
+    private Boolean mandatory = false; // true = always appears, false = can be randomly selected
+
+    @Column(name = "marks")
+    private Double marks; // Mark allocated to the question
 }
 
 

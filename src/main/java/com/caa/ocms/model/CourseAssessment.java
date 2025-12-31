@@ -22,7 +22,10 @@ public class CourseAssessment {
     private String description;
 
     @Column(name = "questions_to_present")
-    private Integer questionsToPresent;
+    private Integer questionsToPresent; // Number of objective (multiple choice) questions to present
+
+    @Column(name = "mandatory_structured_count")
+    private Integer mandatoryStructuredCount; // Number of mandatory structured questions in the quiz
 
     @Column(name = "question_count")
     private Integer questionCount;
@@ -30,6 +33,9 @@ public class CourseAssessment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")
     private Course course; // null for standalone assessments
+
+    @Column(name = "category")
+    private String category; // For standalone assessments: OJT, Proficiency, Certification, Recurrent
 
     @Column(name = "show_answers")
     private Boolean showAnswers = true;

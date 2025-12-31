@@ -19,7 +19,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
     @Query("select count(distinct a.participantId) from QuizAttempt a where a.quiz.id = :assessmentId and a.completedAt is not null")
     long countUniqueParticipantsByAssessmentId(@Param("assessmentId") Long assessmentId);
     
-    @Query("select avg(a.score * 100.0 / a.totalQuestions) from QuizAttempt a where a.quiz.id = :assessmentId and a.completedAt is not null and a.totalQuestions > 0")
+    @Query("select avg(case when a.totalMarks is not null and a.totalMarks > 0 then a.score * 100.0 / a.totalMarks else a.score * 100.0 / a.totalQuestions end) from QuizAttempt a where a.quiz.id = :assessmentId and a.completedAt is not null and (a.totalMarks > 0 or a.totalQuestions > 0)")
     Double getAverageScorePercentageByAssessmentId(@Param("assessmentId") Long assessmentId);
     
     @Query("select count(a) * 100.0 / (select count(a2) from QuizAttempt a2 where a2.quiz.id = :assessmentId and a2.completedAt is not null) from QuizAttempt a where a.quiz.id = :assessmentId and a.completedAt is not null and a.passed = true")

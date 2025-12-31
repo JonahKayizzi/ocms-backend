@@ -22,8 +22,14 @@ public class CourseAssessmentController {
     }
 
     @GetMapping("/standalone")
-    public ResponseEntity<List<CourseAssessment>> getStandaloneAssessments() {
-        List<CourseAssessment> assessments = assessmentService.getStandaloneAssessments();
+    public ResponseEntity<List<CourseAssessment>> getStandaloneAssessments(
+            @RequestParam(required = false) String category) {
+        List<CourseAssessment> assessments;
+        if (category != null && !category.isEmpty()) {
+            assessments = assessmentService.getStandaloneAssessmentsByCategory(category);
+        } else {
+            assessments = assessmentService.getStandaloneAssessments();
+        }
         return ResponseEntity.ok(assessments);
     }
 

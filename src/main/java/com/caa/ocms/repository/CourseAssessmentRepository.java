@@ -13,6 +13,9 @@ public interface CourseAssessmentRepository extends JpaRepository<CourseAssessme
 
     @Query("SELECT a FROM CourseAssessment a WHERE a.course IS NULL AND a.status = 1 ORDER BY a.id DESC")
     List<CourseAssessment> findStandaloneActive();
+    
+    @Query("SELECT a FROM CourseAssessment a WHERE a.course IS NULL AND a.status = 1 AND (:category IS NULL OR a.category = :category) ORDER BY a.id DESC")
+    List<CourseAssessment> findStandaloneActiveByCategory(@Param("category") String category);
 }
 
 

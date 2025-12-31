@@ -46,7 +46,18 @@ public class QuizAttemptController {
         }
         String userId = String.valueOf(req.get("participantId"));
         boolean correct = Boolean.parseBoolean(String.valueOf(req.get("correct")));
-        quizAttemptService.recordAnswer(attemptId, questionId, answerId, userId, correct);
+        
+        // Handle structured answer text
+        Object structuredAnswerRaw = req.get("structuredAnswer");
+        String structuredAnswer = null;
+        if (structuredAnswerRaw != null) {
+            String s = String.valueOf(structuredAnswerRaw);
+            if (!"null".equalsIgnoreCase(s) && s.trim().length() > 0) {
+                structuredAnswer = s;
+            }
+        }
+        
+        quizAttemptService.recordAnswer(attemptId, questionId, answerId, userId, correct, structuredAnswer);
         return ResponseEntity.ok().build();
     }
 
@@ -54,6 +65,35 @@ public class QuizAttemptController {
     public ResponseEntity<Map<String, Object>> finish(@RequestBody Map<String, Object> req) {
         Long attemptId = Long.valueOf(String.valueOf(req.get("attemptId")));
         return ResponseEntity.ok(quizAttemptService.finishAttempt(attemptId));
+    }
+
+    @PostMapping("/award-marks")
+    public ResponseEntity<?> awardMarks(@RequestBody Map<String, Object> req) {
+        try {
+            Long attemptId = Long.valueOf(String.valueOf(req.get("attemptId")));
+            Long questionId = Long.valueOf(String.valueOf(req.get("questionId")));
+            Double awardedMarks = Double.valueOf(String.valueOf(req.get("awardedMarks")));
+            Object maxMarksRaw = req.get("maxMarks");
+            Double maxMarks = null;
+            if (maxMarksRaw != null) {
+                String s = String.valueOf(maxMarksRaw);
+                if (!"null".equalsIgnoreCase(s) && s.trim().length() > 0) {
+                    maxMarks = Double.valueOf(s);
+                }
+            }
+            // This method now recalculates the score and returns updated attempt data
+            Map<String, Object> updatedAttempt = quizAttemptService.awardMarksForStructuredQuestion(attemptId, questionId, awardedMarks, maxMarks);
+            return ResponseEntity.ok(updatedAttempt);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(400).body(error);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to award marks");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
     }
 
     @GetMapping("/user/{participantId}")
@@ -71,6 +111,15 @@ public class QuizAttemptController {
             m.put("attemptNumber", a.getAttemptNumber());
             m.put("score", a.getScore());
             m.put("totalQuestions", a.getTotalQuestions());
+            m.put("totalMarks", a.getTotalMarks());
+            // Calculate percentage based on total marks if available, otherwise use total questions
+            double percentage = 0.0;
+            if (a.getTotalMarks() != null && a.getTotalMarks() > 0) {
+                percentage = (a.getScore() * 100.0 / a.getTotalMarks());
+            } else if (a.getTotalQuestions() > 0) {
+                percentage = (a.getScore() * 100.0 / a.getTotalQuestions());
+            }
+            m.put("percentage", Math.round(percentage * 100.0) / 100.0);
             m.put("passed", a.isPassed());
             m.put("completedAt", a.getCompletedAt());
             return m;

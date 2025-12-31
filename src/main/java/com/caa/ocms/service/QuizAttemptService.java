@@ -51,7 +51,7 @@ public class QuizAttemptService {
     }
 
     @Transactional
-    public void recordAnswer(Long attemptId, Long questionId, Long answerId, String userId, boolean correct) {
+    public void recordAnswer(Long attemptId, Long questionId, Long answerId, String userId, boolean correct, String structuredAnswer) {
         QuizAttempt attempt = quizAttemptRepository.findById(attemptId).orElseThrow();
         AssessmentQuestion question = questionRepository.findById(questionId).orElseThrow();
         UserQuestionPerformance perf = new UserQuestionPerformance();
@@ -60,6 +60,15 @@ public class QuizAttemptService {
         perf.setQuestion(question);
         perf.setAnswerId(answerId);
         perf.setCorrect(correct);
+        
+        // For structured questions, store the answer text
+        if ("structured".equals(question.getType()) && structuredAnswer != null) {
+            perf.setAnswerText(structuredAnswer);
+            // Structured questions don't have a correct answer initially (admin will mark)
+            perf.setCorrect(false);
+            perf.setMarkAwarded(null);
+        }
+        
         performanceRepository.save(perf);
     }
 
@@ -68,20 +77,146 @@ public class QuizAttemptService {
         QuizAttempt attempt = quizAttemptRepository.findById(attemptId).orElseThrow();
         List<UserQuestionPerformance> answers = performanceRepository.findByAttemptId(attemptId);
         int total = answers.size();
-        int score = (int) answers.stream().filter(UserQuestionPerformance::isCorrect).count();
+        
+        // Aggregate scores from ALL questions (both multiple choice and structured)
+        // This calculation is done when the quiz is completed initially
+        // When admin awards marks for structured questions later, recalculateAttemptScore() is called
+        
+        double multipleChoiceMarks = 0.0;
+        double structuredMarksTotal = 0.0;
+        double totalMarksPossible = 0.0;
+        
+        // Loop through ALL answers to calculate total marks possible and earned marks
+        for (UserQuestionPerformance perf : answers) {
+            AssessmentQuestion question = perf.getQuestion();
+            Double questionMarks = question.getMarks() != null ? question.getMarks() : 1.0;
+            
+            // Add to total marks possible (for all question types)
+            totalMarksPossible += questionMarks;
+            
+            if ("structured".equals(question.getType())) {
+                // For structured questions: use mark_awarded if admin has already graded it
+                // Otherwise, it will be 0 until admin awards marks (then recalculateAttemptScore is called)
+                if (perf.getMarkAwarded() != null) {
+                    structuredMarksTotal += perf.getMarkAwarded();
+                }
+            } else {
+                // For multiple choice: award full question marks if correct, 0 if incorrect
+                if (perf.isCorrect()) {
+                    multipleChoiceMarks += questionMarks;
+                }
+            }
+        }
+        
+        // Total score = multiple choice marks + structured marks
+        double totalScore = multipleChoiceMarks + structuredMarksTotal;
+        double percentage = totalMarksPossible > 0 ? (totalScore / totalMarksPossible) * 100 : 0;
+        
+        // Save aggregated score and total marks to quiz_attempts table
         attempt.setTotalQuestions(total);
-        attempt.setScore(score);
+        attempt.setScore(totalScore); // Store score as double to preserve precision
+        attempt.setTotalMarks(totalMarksPossible); // Store total marks possible
         attempt.setCompletedAt(Instant.now());
         // simple pass rule: >= 60%
-        attempt.setPassed(total == 0 ? false : (score * 100 / total) >= 60);
+        attempt.setPassed(percentage >= 60);
         quizAttemptRepository.save(attempt);
+        
         Map<String, Object> resp = new HashMap<>();
         resp.put("attemptId", attempt.getId());
-        resp.put("score", attempt.getScore());
+        resp.put("score", Math.round(totalScore * 100.0) / 100.0); // Return with 2 decimal places
         resp.put("total", attempt.getTotalQuestions());
-        resp.put("percentage", total == 0 ? 0 : (attempt.getScore() * 100 / total));
+        resp.put("totalMarks", Math.round(totalMarksPossible * 100.0) / 100.0);
+        resp.put("percentage", Math.round(percentage * 100.0) / 100.0);
         resp.put("passed", attempt.isPassed());
         return resp;
+    }
+    
+    @Transactional
+    public Map<String, Object> awardMarksForStructuredQuestion(Long attemptId, Long questionId, Double awardedMarks, Double maxMarks) {
+        List<UserQuestionPerformance> performances = performanceRepository.findByAttemptId(attemptId);
+        UserQuestionPerformance perf = performances.stream()
+            .filter(p -> p.getQuestion().getId().equals(questionId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Question performance not found for this attempt"));
+        
+        AssessmentQuestion question = perf.getQuestion();
+        if (!"structured".equals(question.getType())) {
+            throw new IllegalArgumentException("Question is not a structured question");
+        }
+        
+        // Validate that awarded marks don't exceed max marks
+        if (maxMarks != null && awardedMarks > maxMarks) {
+            throw new IllegalArgumentException("Awarded marks cannot exceed maximum marks");
+        }
+        
+        perf.setMarkAwarded(awardedMarks);
+        // Update correct flag based on whether marks were awarded (optional logic)
+        // For now, we'll consider it "correct" if marks > 0
+        perf.setCorrect(awardedMarks > 0);
+        performanceRepository.save(perf);
+        
+        // Recalculate the attempt score after awarding marks (aggregates all questions)
+        recalculateAttemptScore(attemptId);
+        
+        // Return updated attempt data
+        QuizAttempt attempt = quizAttemptRepository.findById(attemptId).orElseThrow();
+        Map<String, Object> response = new HashMap<>();
+        response.put("attemptId", attempt.getId());
+        response.put("score", attempt.getScore());
+        response.put("totalMarks", attempt.getTotalMarks());
+        response.put("totalQuestions", attempt.getTotalQuestions());
+        response.put("percentage", attempt.getTotalMarks() != null && attempt.getTotalMarks() > 0 
+            ? Math.round((attempt.getScore() / attempt.getTotalMarks()) * 10000.0) / 100.0 
+            : 0.0);
+        response.put("passed", attempt.isPassed());
+        return response;
+    }
+    
+    @Transactional
+    private void recalculateAttemptScore(Long attemptId) {
+        QuizAttempt attempt = quizAttemptRepository.findById(attemptId).orElseThrow();
+        List<UserQuestionPerformance> answers = performanceRepository.findByAttemptId(attemptId);
+        
+        // Aggregate scores from ALL questions (both multiple choice and structured)
+        // Example: 10 multiple choice (1 mark each) + 1 structured (10 marks) = 20 total marks possible
+        // User gets: 1 correct multiple choice (1 mark) + 4 marks on structured (4 marks) = 5 total marks
+        // Percentage: (5/20) * 100 = 25%
+        
+        double multipleChoiceMarks = 0.0;
+        double structuredMarksTotal = 0.0;
+        double totalMarksPossible = 0.0;
+        
+        // Loop through ALL answers to calculate total marks possible and earned marks
+        for (UserQuestionPerformance perf : answers) {
+            AssessmentQuestion question = perf.getQuestion();
+            Double questionMarks = question.getMarks() != null ? question.getMarks() : 1.0;
+            
+            // Add to total marks possible (for all question types)
+            totalMarksPossible += questionMarks;
+            
+            if ("structured".equals(question.getType())) {
+                // For structured questions: use mark_awarded if admin has graded it
+                if (perf.getMarkAwarded() != null) {
+                    structuredMarksTotal += perf.getMarkAwarded();
+                }
+                // If not graded yet, structuredMarksTotal remains 0 (no marks awarded)
+            } else {
+                // For multiple choice: award full question marks if correct, 0 if incorrect
+                if (perf.isCorrect()) {
+                    multipleChoiceMarks += questionMarks;
+                }
+            }
+        }
+        
+        // Total score = multiple choice marks + structured marks
+        double totalScore = multipleChoiceMarks + structuredMarksTotal;
+        double percentage = totalMarksPossible > 0 ? (totalScore / totalMarksPossible) * 100 : 0;
+        
+        // Save aggregated score and total marks to quiz_attempts table
+        attempt.setScore(totalScore); // Store score as double to preserve precision
+        attempt.setTotalMarks(totalMarksPossible); // Store total marks possible
+        attempt.setPassed(percentage >= 60);
+        quizAttemptRepository.save(attempt);
     }
 
     public List<QuizAttempt> getAttemptsByUser(String participantId) {
@@ -109,8 +244,16 @@ public class QuizAttemptService {
             dto.put("attemptNumber", attempt.getAttemptNumber());
             dto.put("score", attempt.getScore());
             dto.put("totalQuestions", attempt.getTotalQuestions());
-            dto.put("percentage", attempt.getTotalQuestions() > 0 ? 
-                Math.round((attempt.getScore() * 100.0 / attempt.getTotalQuestions()) * 100.0) / 100.0 : 0.0);
+            dto.put("totalMarks", attempt.getTotalMarks());
+            // Calculate percentage based on total marks, not total questions
+            double calculatedPercentage = 0.0;
+            if (attempt.getTotalMarks() != null && attempt.getTotalMarks() > 0) {
+                calculatedPercentage = (attempt.getScore() * 100.0 / attempt.getTotalMarks());
+            } else if (attempt.getTotalQuestions() > 0) {
+                // Fallback to question count if totalMarks is not set (for old attempts)
+                calculatedPercentage = (attempt.getScore() * 100.0 / attempt.getTotalQuestions());
+            }
+            dto.put("percentage", Math.round(calculatedPercentage * 100.0) / 100.0);
             dto.put("passed", attempt.isPassed());
             dto.put("startedAt", attempt.getStartedAt());
             dto.put("completedAt", attempt.getCompletedAt());
@@ -140,8 +283,16 @@ public class QuizAttemptService {
         details.put("attemptNumber", attempt.getAttemptNumber());
         details.put("score", attempt.getScore());
         details.put("totalQuestions", attempt.getTotalQuestions());
-        details.put("percentage", attempt.getTotalQuestions() > 0 ? 
-            Math.round((attempt.getScore() * 100.0 / attempt.getTotalQuestions()) * 100.0) / 100.0 : 0.0);
+        details.put("totalMarks", attempt.getTotalMarks());
+        // Calculate percentage based on total marks, not total questions
+        double calculatedPercentage = 0.0;
+        if (attempt.getTotalMarks() != null && attempt.getTotalMarks() > 0) {
+            calculatedPercentage = (attempt.getScore() * 100.0 / attempt.getTotalMarks());
+        } else if (attempt.getTotalQuestions() > 0) {
+            // Fallback to question count if totalMarks is not set (for old attempts)
+            calculatedPercentage = (attempt.getScore() * 100.0 / attempt.getTotalQuestions());
+        }
+        details.put("percentage", Math.round(calculatedPercentage * 100.0) / 100.0);
         details.put("passed", attempt.isPassed());
         details.put("startedAt", attempt.getStartedAt());
         details.put("completedAt", attempt.getCompletedAt());
@@ -155,14 +306,27 @@ public class QuizAttemptService {
         // Add question details
         List<Map<String, Object>> questionDetails = performances.stream().map(perf -> {
             Map<String, Object> qDetail = new HashMap<>();
-            qDetail.put("questionId", perf.getQuestion().getId());
-            qDetail.put("questionText", perf.getQuestion().getText());
+            AssessmentQuestion question = perf.getQuestion();
+            qDetail.put("questionId", question.getId());
+            qDetail.put("questionText", question.getText());
+            qDetail.put("questionType", question.getType());
+            qDetail.put("questionMarks", question.getMarks());
             qDetail.put("selectedAnswerId", perf.getAnswerId());
             qDetail.put("correct", perf.isCorrect());
             
-            // Get question options and identify correct answer
-            if (perf.getQuestion().getOptions() != null) {
-                List<Map<String, Object>> options = perf.getQuestion().getOptions().stream().map(option -> {
+            // For structured questions, include answer text and mark awarded
+            if ("structured".equals(question.getType())) {
+                qDetail.put("answerText", perf.getAnswerText());
+                qDetail.put("structuredAnswer", perf.getAnswerText()); // Also include as structuredAnswer for frontend compatibility
+                qDetail.put("markAwarded", perf.getMarkAwarded());
+                qDetail.put("awardedMarks", perf.getMarkAwarded()); // Also include as awardedMarks for frontend compatibility
+            }
+            // Always include maxMarks (same as questionMarks) for both question types
+            qDetail.put("maxMarks", question.getMarks());
+            
+            // Get question options and identify correct answer (for multiple choice)
+            if (question.getOptions() != null && !question.getOptions().isEmpty()) {
+                List<Map<String, Object>> options = question.getOptions().stream().map(option -> {
                     Map<String, Object> optionMap = new HashMap<>();
                     optionMap.put("id", option.getId());
                     optionMap.put("text", option.getOptionText());
@@ -172,7 +336,7 @@ public class QuizAttemptService {
                 qDetail.put("options", options);
                 
                 // Find the correct answer
-                perf.getQuestion().getOptions().stream()
+                question.getOptions().stream()
                     .filter(option -> Boolean.TRUE.equals(option.getIsCorrect()))
                     .findFirst()
                     .ifPresent(correctOption -> {
@@ -182,7 +346,7 @@ public class QuizAttemptService {
                 
                 // Find the selected answer text
                 if (perf.getAnswerId() != null) {
-                    perf.getQuestion().getOptions().stream()
+                    question.getOptions().stream()
                         .filter(option -> option.getId().equals(perf.getAnswerId()))
                         .findFirst()
                         .ifPresent(selectedOption -> {
