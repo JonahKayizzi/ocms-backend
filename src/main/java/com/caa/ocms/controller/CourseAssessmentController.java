@@ -52,6 +52,18 @@ public class CourseAssessmentController {
     public ResponseEntity<String> deleteAssessment(@PathVariable Long assessmentId) {
         return assessmentService.deleteAssessment(assessmentId);
     }
+    
+    @PostMapping("/recalculate-structured-counts")
+    public ResponseEntity<String> recalculateAllStructuredCounts() {
+        assessmentService.recalculateAllMandatoryStructuredCounts();
+        return ResponseEntity.ok("Mandatory structured counts recalculated for all assessments");
+    }
+    
+    @PostMapping("/{assessmentId}/recalculate-structured-count")
+    public ResponseEntity<String> recalculateStructuredCount(@PathVariable Long assessmentId) {
+        assessmentService.updateMandatoryStructuredCount(assessmentId);
+        return ResponseEntity.ok("Mandatory structured count recalculated for assessment " + assessmentId);
+    }
 }
 
 

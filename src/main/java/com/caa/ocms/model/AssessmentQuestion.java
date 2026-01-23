@@ -40,7 +40,7 @@ public class AssessmentQuestion {
 
     @Column(name = "type")
     @JsonProperty("questionType")
-    private String type; // "multiple_choice" or "structured"
+    private String type; // "MCQ" or "structured"
 
     @Column(name = "mandatory")
     @JsonProperty("isMandatory")

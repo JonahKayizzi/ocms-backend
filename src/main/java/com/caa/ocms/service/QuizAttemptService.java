@@ -62,7 +62,7 @@ public class QuizAttemptService {
         perf.setCorrect(correct);
         
         // For structured questions, store the answer text
-        if ("structured".equals(question.getType()) && structuredAnswer != null) {
+        if ("structured".equalsIgnoreCase(question.getType()) && structuredAnswer != null) {
             perf.setAnswerText(structuredAnswer);
             // Structured questions don't have a correct answer initially (admin will mark)
             perf.setCorrect(false);
@@ -87,14 +87,14 @@ public class QuizAttemptService {
         double totalMarksPossible = 0.0;
         
         // Loop through ALL answers to calculate total marks possible and earned marks
+        // Both MCQs and structured questions use their allocated marks from the marks field
         for (UserQuestionPerformance perf : answers) {
             AssessmentQuestion question = perf.getQuestion();
-            Double questionMarks = question.getMarks() != null ? question.getMarks() : 1.0;
-            
-            // Add to total marks possible (for all question types)
+            // Default to 1.0 mark if not specified for a question
+            Double questionMarks = question.getMarks() != null && question.getMarks() > 0 ? question.getMarks() : 1.0;
             totalMarksPossible += questionMarks;
             
-            if ("structured".equals(question.getType())) {
+            if ("structured".equalsIgnoreCase(question.getType())) {
                 // For structured questions: use mark_awarded if admin has already graded it
                 // Otherwise, it will be 0 until admin awards marks (then recalculateAttemptScore is called)
                 if (perf.getMarkAwarded() != null) {
@@ -117,8 +117,8 @@ public class QuizAttemptService {
         attempt.setScore(totalScore); // Store score as double to preserve precision
         attempt.setTotalMarks(totalMarksPossible); // Store total marks possible
         attempt.setCompletedAt(Instant.now());
-        // simple pass rule: >= 60%
-        attempt.setPassed(percentage >= 60);
+        // Pass rule: >= 70%
+        attempt.setPassed(percentage >= 70);
         quizAttemptRepository.save(attempt);
         
         Map<String, Object> resp = new HashMap<>();
@@ -140,13 +140,19 @@ public class QuizAttemptService {
             .orElseThrow(() -> new IllegalArgumentException("Question performance not found for this attempt"));
         
         AssessmentQuestion question = perf.getQuestion();
-        if (!"structured".equals(question.getType())) {
+        if (!"structured".equalsIgnoreCase(question.getType())) {
             throw new IllegalArgumentException("Question is not a structured question");
         }
         
         // Validate that awarded marks don't exceed max marks
         if (maxMarks != null && awardedMarks > maxMarks) {
             throw new IllegalArgumentException("Awarded marks cannot exceed maximum marks");
+        }
+        
+        // Update the question's marks field if maxMarks is provided and different from current
+        if (maxMarks != null && (question.getMarks() == null || !question.getMarks().equals(maxMarks))) {
+            question.setMarks(maxMarks);
+            questionRepository.save(question);
         }
         
         perf.setMarkAwarded(awardedMarks);
@@ -182,6 +188,7 @@ public class QuizAttemptService {
         // User gets: 1 correct multiple choice (1 mark) + 4 marks on structured (4 marks) = 5 total marks
         // Percentage: (5/20) * 100 = 25%
         
+        // Both MCQs and structured questions use their allocated marks from the marks field
         double multipleChoiceMarks = 0.0;
         double structuredMarksTotal = 0.0;
         double totalMarksPossible = 0.0;
@@ -189,12 +196,13 @@ public class QuizAttemptService {
         // Loop through ALL answers to calculate total marks possible and earned marks
         for (UserQuestionPerformance perf : answers) {
             AssessmentQuestion question = perf.getQuestion();
-            Double questionMarks = question.getMarks() != null ? question.getMarks() : 1.0;
+            // Default to 1.0 mark if not specified for a question
+            Double questionMarks = question.getMarks() != null && question.getMarks() > 0 ? question.getMarks() : 1.0;
             
             // Add to total marks possible (for all question types)
             totalMarksPossible += questionMarks;
             
-            if ("structured".equals(question.getType())) {
+            if ("structured".equalsIgnoreCase(question.getType())) {
                 // For structured questions: use mark_awarded if admin has graded it
                 if (perf.getMarkAwarded() != null) {
                     structuredMarksTotal += perf.getMarkAwarded();
@@ -215,7 +223,8 @@ public class QuizAttemptService {
         // Save aggregated score and total marks to quiz_attempts table
         attempt.setScore(totalScore); // Store score as double to preserve precision
         attempt.setTotalMarks(totalMarksPossible); // Store total marks possible
-        attempt.setPassed(percentage >= 60);
+        // Pass rule: >= 70%
+        attempt.setPassed(percentage >= 70);
         quizAttemptRepository.save(attempt);
     }
 
@@ -315,7 +324,7 @@ public class QuizAttemptService {
             qDetail.put("correct", perf.isCorrect());
             
             // For structured questions, include answer text and mark awarded
-            if ("structured".equals(question.getType())) {
+            if ("structured".equalsIgnoreCase(question.getType())) {
                 qDetail.put("answerText", perf.getAnswerText());
                 qDetail.put("structuredAnswer", perf.getAnswerText()); // Also include as structuredAnswer for frontend compatibility
                 qDetail.put("markAwarded", perf.getMarkAwarded());

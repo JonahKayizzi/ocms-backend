@@ -19,18 +19,53 @@ public class CourseAssessmentService {
     private final AssessmentQuestionRepository questionRepository;
 
     public List<CourseAssessment> getAssessmentsByCourse(Long courseId) {
-        return assessmentRepository.findByCourseId(courseId);
+        List<CourseAssessment> assessments = assessmentRepository.findByCourseId(courseId);
+        // Ensure counts are up to date (recalculate if null)
+        for (CourseAssessment assessment : assessments) {
+            if (assessment.getMandatoryStructuredCount() == null) {
+                updateMandatoryStructuredCount(assessment.getId());
+                // Refresh from database to get updated count
+                assessmentRepository.findById(assessment.getId()).ifPresent(updated -> {
+                    assessment.setMandatoryStructuredCount(updated.getMandatoryStructuredCount());
+                });
+            }
+        }
+        return assessments;
     }
 
     public List<CourseAssessment> getStandaloneAssessments() {
-        return assessmentRepository.findStandaloneActive();
+        List<CourseAssessment> assessments = assessmentRepository.findStandaloneActive();
+        // Ensure counts are up to date (recalculate if null)
+        for (CourseAssessment assessment : assessments) {
+            if (assessment.getMandatoryStructuredCount() == null) {
+                updateMandatoryStructuredCount(assessment.getId());
+                // Refresh from database to get updated count
+                assessmentRepository.findById(assessment.getId()).ifPresent(updated -> {
+                    assessment.setMandatoryStructuredCount(updated.getMandatoryStructuredCount());
+                });
+            }
+        }
+        return assessments;
     }
     
     public List<CourseAssessment> getStandaloneAssessmentsByCategory(String category) {
+        List<CourseAssessment> assessments;
         if (category == null || category.isEmpty()) {
-            return assessmentRepository.findStandaloneActive();
+            assessments = assessmentRepository.findStandaloneActive();
+        } else {
+            assessments = assessmentRepository.findStandaloneActiveByCategory(category);
         }
-        return assessmentRepository.findStandaloneActiveByCategory(category);
+        // Ensure counts are up to date (recalculate if null)
+        for (CourseAssessment assessment : assessments) {
+            if (assessment.getMandatoryStructuredCount() == null) {
+                updateMandatoryStructuredCount(assessment.getId());
+                // Refresh from database to get updated count
+                assessmentRepository.findById(assessment.getId()).ifPresent(updated -> {
+                    assessment.setMandatoryStructuredCount(updated.getMandatoryStructuredCount());
+                });
+            }
+        }
+        return assessments;
     }
 
     public ResponseEntity<CourseAssessment> getAssessmentById(Long assessmentId) {
@@ -92,18 +127,46 @@ public class CourseAssessmentService {
     public void updateMandatoryStructuredCount(Long assessmentId) {
         Optional<CourseAssessment> assessmentOpt = assessmentRepository.findById(assessmentId);
         if (assessmentOpt.isEmpty()) {
+            System.out.println("Warning: Assessment " + assessmentId + " not found for mandatory structured count update");
             return;
         }
         
         CourseAssessment assessment = assessmentOpt.get();
         List<com.caa.ocms.model.AssessmentQuestion> questions = questionRepository.findByAssessment(assessmentId);
         
+        // Count mandatory structured questions (case-insensitive check)
         long mandatoryStructuredCount = questions.stream()
-            .filter(q -> "structured".equals(q.getType()) && q.getMandatory() != null && q.getMandatory())
+            .filter(q -> {
+                boolean isStructured = "structured".equalsIgnoreCase(q.getType());
+                boolean isMandatory = q.getMandatory() != null && q.getMandatory();
+                return isStructured && isMandatory;
+            })
             .count();
+        
+        // Debug logging
+        long totalStructured = questions.stream()
+            .filter(q -> "structured".equalsIgnoreCase(q.getType()))
+            .count();
+        System.out.println("Assessment " + assessmentId + " (" + assessment.getName() + "): " +
+                         "Total questions: " + questions.size() +
+                         ", Total structured: " + totalStructured +
+                         ", Mandatory structured: " + mandatoryStructuredCount);
         
         assessment.setMandatoryStructuredCount((int) mandatoryStructuredCount);
         assessmentRepository.save(assessment);
+    }
+    
+    /**
+     * Recalculate mandatory structured count for all assessments
+     * Useful for updating existing assessments after migration
+     */
+    public void recalculateAllMandatoryStructuredCounts() {
+        List<CourseAssessment> allAssessments = assessmentRepository.findAll();
+        System.out.println("Recalculating mandatory structured counts for " + allAssessments.size() + " assessments...");
+        for (CourseAssessment assessment : allAssessments) {
+            updateMandatoryStructuredCount(assessment.getId());
+        }
+        System.out.println("Completed recalculating mandatory structured counts");
     }
 
     public ResponseEntity<String> deleteAssessment(Long assessmentId) {
