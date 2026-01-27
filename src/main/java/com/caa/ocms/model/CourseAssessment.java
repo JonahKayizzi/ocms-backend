@@ -49,6 +49,9 @@ public class CourseAssessment {
     @Column(name = "time_limit")
     private Integer timeLimit = 30;
 
+    @Column(name = "pass_mark")
+    private Integer passMark = 70; // Minimum percentage score required to pass (default 70%)
+
     @Column
     private Integer status = 1;
 }

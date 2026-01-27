@@ -112,6 +112,7 @@ public class CourseAssessmentService {
         if (updates.getTimingMode() != null) assessment.setTimingMode(updates.getTimingMode());
         if (updates.getTimeLimit() != null) assessment.setTimeLimit(updates.getTimeLimit());
         if (updates.getCategory() != null) assessment.setCategory(updates.getCategory());
+        if (updates.getPassMark() != null) assessment.setPassMark(updates.getPassMark());
 
         CourseAssessment saved = assessmentRepository.save(assessment);
         
