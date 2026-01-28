@@ -52,6 +52,9 @@ public class CourseAssessment {
     @Column(name = "pass_mark")
     private Integer passMark = 70; // Minimum percentage score required to pass (default 70%)
 
+    @Column(name = "is_aim")
+    private Boolean isAim = false; // True for AIM courses (MANSOPS reports), false for non-AIM courses
+
     @Column
     private Integer status = 1;
 }
