@@ -56,6 +56,9 @@ public class CourseAssessment {
     private Double passMark = 70.0; // Pass mark as percentage (default 70%)
 >>>>>>> Stashed changes
 
+    @Column(name = "is_aim")
+    private Boolean isAim = false; // True for AIM courses (MANSOPS reports), false for non-AIM courses
+
     @Column
     private Integer status = 1;
 }
