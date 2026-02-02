@@ -58,7 +58,9 @@ public class QuizAttemptService {
     public void recordAnswer(Long attemptId, Long questionId, Long answerId, String userId, boolean correct, String structuredAnswer) {
         QuizAttempt attempt = quizAttemptRepository.findById(attemptId).orElseThrow();
         AssessmentQuestion question = questionRepository.findById(questionId).orElseThrow();
-        UserQuestionPerformance perf = new UserQuestionPerformance();
+        // Upsert: update existing answer for this attempt+question (e.g. user moved next then back, or page refresh re-sent)
+        UserQuestionPerformance perf = performanceRepository.findByAttempt_IdAndQuestion_Id(attemptId, questionId)
+            .orElse(new UserQuestionPerformance());
         perf.setAttempt(attempt);
         perf.setUserId(userId);
         perf.setQuestion(question);
@@ -71,6 +73,8 @@ public class QuizAttemptService {
             // Structured questions don't have a correct answer initially (admin will mark)
             perf.setCorrect(false);
             perf.setMarkAwarded(null);
+        } else if (!"structured".equalsIgnoreCase(question.getType())) {
+            perf.setAnswerText(null);
         }
         
         performanceRepository.save(perf);
