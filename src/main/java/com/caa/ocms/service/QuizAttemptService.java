@@ -112,13 +112,17 @@ public class QuizAttemptService {
         double totalScore = multipleChoiceMarks + structuredMarksTotal;
         double percentage = totalMarksPossible > 0 ? (totalScore / totalMarksPossible) * 100 : 0;
         
+        // Get pass mark from assessment (default to 70 if not set)
+        CourseAssessment assessment = attempt.getQuiz();
+        Integer passMark = assessment != null && assessment.getPassMark() != null ? assessment.getPassMark() : 70;
+        
         // Save aggregated score and total marks to quiz_attempts table
         attempt.setTotalQuestions(total);
         attempt.setScore(totalScore); // Store score as double to preserve precision
         attempt.setTotalMarks(totalMarksPossible); // Store total marks possible
         attempt.setCompletedAt(Instant.now());
-        // Pass rule: >= 70%
-        attempt.setPassed(percentage >= 70);
+        // Pass rule: use assessment's passMark, default to 70%
+        attempt.setPassed(percentage >= passMark);
         quizAttemptRepository.save(attempt);
         
         Map<String, Object> resp = new HashMap<>();
@@ -220,12 +224,53 @@ public class QuizAttemptService {
         double totalScore = multipleChoiceMarks + structuredMarksTotal;
         double percentage = totalMarksPossible > 0 ? (totalScore / totalMarksPossible) * 100 : 0;
         
+        // Get pass mark from assessment (default to 70 if not set)
+        CourseAssessment assessment = attempt.getQuiz();
+        Integer passMark = assessment != null && assessment.getPassMark() != null ? assessment.getPassMark() : 70;
+        
         // Save aggregated score and total marks to quiz_attempts table
         attempt.setScore(totalScore); // Store score as double to preserve precision
         attempt.setTotalMarks(totalMarksPossible); // Store total marks possible
-        // Pass rule: >= 70%
-        attempt.setPassed(percentage >= 70);
+        // Pass rule: use assessment's passMark, default to 70%
+        attempt.setPassed(percentage >= passMark);
         quizAttemptRepository.save(attempt);
+    }
+    
+    /**
+     * Recalculate all attempts for an assessment based on current pass mark and correct answers.
+     * This is useful when:
+     * - Pass mark is updated
+     * - Questions are edited (correct answers changed or questions removed)
+     * - New attempts have been completed
+     */
+    @Transactional
+    public Map<String, Object> recalculateAssessmentAttempts(Long assessmentId) {
+        CourseAssessment assessment = assessmentRepository.findById(assessmentId)
+            .orElseThrow(() -> new IllegalArgumentException("Assessment not found: " + assessmentId));
+        
+        Integer passMark = assessment.getPassMark() != null ? assessment.getPassMark() : 70;
+        List<QuizAttempt> attempts = quizAttemptRepository.findByAssessmentIdOrderByCompletedAtDesc(assessmentId);
+        
+        int recalculatedCount = 0;
+        for (QuizAttempt attempt : attempts) {
+            // Only recalculate completed attempts
+            if (attempt.getCompletedAt() == null) {
+                continue;
+            }
+            
+            // Recalculate score and pass/fail status
+            recalculateAttemptScore(attempt.getId());
+            recalculatedCount++;
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("assessmentId", assessmentId);
+        result.put("assessmentName", assessment.getName());
+        result.put("recalculatedAttempts", recalculatedCount);
+        result.put("totalAttempts", attempts.size());
+        result.put("passMark", passMark);
+        
+        return result;
     }
 
     public List<QuizAttempt> getAttemptsByUser(String participantId) {

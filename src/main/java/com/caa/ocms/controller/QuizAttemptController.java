@@ -165,6 +165,23 @@ public class QuizAttemptController {
             return ResponseEntity.status(404).body(error);
         }
     }
+    
+    @PostMapping("/assessment/{assessmentId}/recalculate")
+    public ResponseEntity<Map<String, Object>> recalculateAssessmentAttempts(@PathVariable Long assessmentId) {
+        try {
+            Map<String, Object> result = quizAttemptService.recalculateAssessmentAttempts(assessmentId);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(404).body(error);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to recalculate assessment attempts");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
 }
 
 
