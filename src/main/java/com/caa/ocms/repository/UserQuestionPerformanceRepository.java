@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface UserQuestionPerformanceRepository extends JpaRepository<UserQuestionPerformance, Long> {
     List<UserQuestionPerformance> findByAttemptId(Long attemptId);
+
+    java.util.Optional<UserQuestionPerformance> findByAttempt_IdAndQuestion_Id(Long attemptId, Long questionId);
 }
 
 
