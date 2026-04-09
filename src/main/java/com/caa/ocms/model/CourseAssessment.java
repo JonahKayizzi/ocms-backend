@@ -50,7 +50,11 @@ public class CourseAssessment {
     private Integer timeLimit = 30;
 
     @Column(name = "pass_mark")
+<<<<<<< Updated upstream
     private Integer passMark = 70; // Minimum percentage score required to pass (default 70%)
+=======
+    private Double passMark = 70.0; // Pass mark as percentage (default 70%)
+>>>>>>> Stashed changes
 
     @Column
     private Integer status = 1;

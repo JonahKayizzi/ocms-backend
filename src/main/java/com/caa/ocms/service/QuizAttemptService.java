@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class QuizAttemptService {
@@ -16,15 +17,18 @@ public class QuizAttemptService {
     private final UserQuestionPerformanceRepository performanceRepository;
     private final CourseAssessmentRepository assessmentRepository;
     private final AssessmentQuestionRepository questionRepository;
+    private final QuestionOptionRepository optionRepository;
 
     public QuizAttemptService(QuizAttemptRepository quizAttemptRepository,
                               UserQuestionPerformanceRepository performanceRepository,
                               CourseAssessmentRepository assessmentRepository,
-                              AssessmentQuestionRepository questionRepository) {
+                              AssessmentQuestionRepository questionRepository,
+                              QuestionOptionRepository optionRepository) {
         this.quizAttemptRepository = quizAttemptRepository;
         this.performanceRepository = performanceRepository;
         this.assessmentRepository = assessmentRepository;
         this.questionRepository = questionRepository;
+        this.optionRepository = optionRepository;
     }
 
     @Transactional
@@ -121,7 +125,13 @@ public class QuizAttemptService {
         attempt.setScore(totalScore); // Store score as double to preserve precision
         attempt.setTotalMarks(totalMarksPossible); // Store total marks possible
         attempt.setCompletedAt(Instant.now());
+<<<<<<< Updated upstream
         // Pass rule: use assessment's passMark, default to 70%
+=======
+        // Pass rule: use assessment's passMark, default to 70% if not set
+        CourseAssessment quiz = attempt.getQuiz();
+        Double passMark = (quiz != null && quiz.getPassMark() != null) ? quiz.getPassMark() : 70.0;
+>>>>>>> Stashed changes
         attempt.setPassed(percentage >= passMark);
         quizAttemptRepository.save(attempt);
         
@@ -231,7 +241,13 @@ public class QuizAttemptService {
         // Save aggregated score and total marks to quiz_attempts table
         attempt.setScore(totalScore); // Store score as double to preserve precision
         attempt.setTotalMarks(totalMarksPossible); // Store total marks possible
+<<<<<<< Updated upstream
         // Pass rule: use assessment's passMark, default to 70%
+=======
+        // Pass rule: use assessment's passMark, default to 70% if not set
+        CourseAssessment quiz = attempt.getQuiz();
+        Double passMark = (quiz != null && quiz.getPassMark() != null) ? quiz.getPassMark() : 70.0;
+>>>>>>> Stashed changes
         attempt.setPassed(percentage >= passMark);
         quizAttemptRepository.save(attempt);
     }
@@ -414,6 +430,59 @@ public class QuizAttemptService {
         
         details.put("questionPerformances", questionDetails);
         return details;
+    }
+    
+    /**
+     * Recalculate all attempts for an assessment based on current pass mark and correct answers.
+     * This is useful when:
+     * - Pass mark is changed
+     * - Correct answers for MCQ questions are changed
+     */
+    @Transactional
+    public Map<String, Object> recalculateAllAttemptsForAssessment(Long assessmentId) {
+        CourseAssessment assessment = assessmentRepository.findById(assessmentId)
+            .orElseThrow(() -> new IllegalArgumentException("Assessment not found"));
+        
+        List<QuizAttempt> attempts = quizAttemptRepository.findByAssessmentIdOrderByCompletedAtDesc(assessmentId);
+        int recalculatedCount = 0;
+        
+        for (QuizAttempt attempt : attempts) {
+            if (attempt.getCompletedAt() == null) {
+                continue; // Skip incomplete attempts
+            }
+            
+            List<UserQuestionPerformance> performances = performanceRepository.findByAttemptId(attempt.getId());
+            
+            // Re-evaluate MCQ answers based on current correct answers
+            for (UserQuestionPerformance perf : performances) {
+                AssessmentQuestion question = perf.getQuestion();
+                
+                // Only re-evaluate MCQ questions (not structured questions)
+                if (!"structured".equalsIgnoreCase(question.getType()) && perf.getAnswerId() != null) {
+                    // Check if the selected option is currently marked as correct
+                    Optional<QuestionOption> selectedOption = optionRepository.findById(perf.getAnswerId());
+                    boolean isCorrect = selectedOption.isPresent() 
+                        && Boolean.TRUE.equals(selectedOption.get().getIsCorrect());
+                    
+                    // Update the correct flag if it has changed
+                    if (perf.isCorrect() != isCorrect) {
+                        perf.setCorrect(isCorrect);
+                        performanceRepository.save(perf);
+                    }
+                }
+            }
+            
+            // Recalculate the attempt score with updated correct answers
+            recalculateAttemptScore(attempt.getId());
+            recalculatedCount++;
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("assessmentId", assessmentId);
+        result.put("assessmentName", assessment.getName());
+        result.put("recalculatedAttempts", recalculatedCount);
+        result.put("totalAttempts", attempts.size());
+        return result;
     }
 }
 
