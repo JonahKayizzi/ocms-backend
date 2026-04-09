@@ -113,6 +113,10 @@ public class CourseAssessmentService {
         if (updates.getTimeLimit() != null) assessment.setTimeLimit(updates.getTimeLimit());
         if (updates.getCategory() != null) assessment.setCategory(updates.getCategory());
         if (updates.getPassMark() != null) assessment.setPassMark(updates.getPassMark());
+        // Handle isAim - allow setting to false explicitly
+        if (updates.getIsAim() != null) {
+            assessment.setIsAim(updates.getIsAim());
+        }
 
         CourseAssessment saved = assessmentRepository.save(assessment);
         
