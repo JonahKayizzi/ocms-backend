@@ -59,6 +59,9 @@ public class CourseAssessment {
     @Column(name = "is_aim")
     private Boolean isAim = false; // True for AIM courses (MANSOPS reports), false for non-AIM courses
 
+    @Column(name = "is_aim")
+    private Boolean isAim = false; // True for AIM courses (MANSOPS reports), false for non-AIM courses
+
     @Column
     private Integer status = 1;
 }
